@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amoru Loops — Calculadora de precios</title>
+<style>
+  :root {
+    --rosa: #E8829A;
+    --rosa-dark: #C2546A;
+    --rosa-light: #F5C0CC;
+    --azul: #8BADC8;
+    --fondo: #FDF6F8;
+    --card: #ffffff;
+    --borde: #e8e0e3;
+    --texto: #2C2C2A;
+    --muted: #888780;
+    --r: 8px;
+    --rl: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--fondo); color: var(--texto); min-height: 100vh; }
+  
+  .header { background: var(--card); border-bottom: 1px solid var(--borde); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+  .logo-circle { width: 40px; height: 40px; border-radius: 50%; background: var(--rosa); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: white; flex-shrink: 0; }
+  .header-text h1 { font-size: 16px; font-weight: 600; color: var(--rosa-dark); }
+  .header-text p { font-size: 12px; color: var(--muted); }
+
+  .tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--borde); overflow-x: auto; }
+  .tab { flex: 1; min-width: 100px; padding: 12px 8px; font-size: 12px; font-weight: 500; text-align: center; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; transition: all .2s; }
+  .tab.active { color: var(--rosa-dark); border-bottom: 2px solid var(--rosa-dark); }
+  .tab:hover { color: var(--rosa); }
+
+  .pane { display: none; padding: 1rem; max-width: 600px; margin: 0 auto; }
+  .pane.active { display: block; }
+
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 3px; }
+  select, input[type=number], input[type=text] { width: 100%; padding: 8px 10px; border-radius: var(--r); border: 1px solid var(--borde); background: var(--card); color: var(--texto); font-size: 14px; }
+  select:focus, input:focus { outline: none; border-color: var(--rosa); }
+
+  .card { background: var(--card); border: 1px solid var(--borde); border-radius: var(--rl); padding: .875rem 1rem; margin-bottom: .875rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .slabel { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .625rem; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .btn { width: 100%; padding: 12px; background: var(--rosa); color: white; border: none; border-radius: var(--r); font-size: 15px; font-weight: 600; cursor: pointer; margin-top: .25rem; transition: background .2s; }
+  .btn:hover { background: var(--rosa-dark); }
+  .btn:active { transform: scale(.98); }
+
+  .result { display: none; margin-top: .875rem; }
+  .result.show { display: block; }
+
+  .pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: .75rem 0; }
+  .pc { border-radius: var(--r); padding: 12px; text-align: center; }
+  .pc .lbl { font-size: 10px; margin-bottom: 3px; font-weight: 500; }
+  .pc .val { font-size: 22px; font-weight: 700; }
+  .pm { background: #EAF3DE; } .pm .lbl, .pm .val { color: #3B6D11; }
+  .pe { background: #E6F1FB; } .pe .lbl, .pe .val { color: #185FA5; }
+  .pp { background: #FBEAF0; } .pp .lbl, .pp .val { color: #993556; }
+  .pu { background: #FAEEDA; } .pu .lbl, .pu .val { color: #854F0B; }
+
+  .desg { font-size: 12px; color: var(--muted); line-height: 1.9; border-top: 1px solid var(--borde); padding-top: .625rem; margin-top: .625rem; }
+  .desg b { color: var(--texto); }
+
+  .mat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .mat-row select { flex: 2; } .mat-row input { flex: 1; }
+  .pct-label { font-size: 10px; color: var(--muted); text-align: center; margin-top: 2px; }
+  .rm { width: 30px; height: 30px; border: 1px solid var(--borde); background: #f8f5f6; border-radius: var(--r); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--muted); }
+  .rm:hover { background: #FBEAF0; color: var(--rosa-dark); }
+  .add-mat { font-size: 12px; color: var(--rosa); cursor: pointer; margin-bottom: .5rem; display: inline-block; font-weight: 500; }
+
+  .info-box { background: #F8F4F6; border-radius: var(--r); padding: 8px 10px; font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.7; }
+  .alerta { background: #FBEAF0; border-radius: var(--r); padding: 8px 10px; font-size: 12px; color: #993556; margin-top: 8px; line-height: 1.7; display: none; }
+  .alerta.show { display: block; }
+  .verde-box { background: #EAF3DE; border-radius: var(--r); padding: 8px 10px; font-size: 12px; color: #3B6D11; margin-bottom: 8px; }
+  .hint { font-size: 10px; color: var(--rosa); margin-left: 4px; }
+
+  .pago-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: .75rem; }
+  .pago-card { border-radius: var(--r); padding: 10px 8px; text-align: center; border: 1px solid var(--borde); }
+  .pago-card .pnum { font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .pago-card .pmom { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .pago-card .pval { font-size: 18px; font-weight: 700; }
+  .p1 { background: #EAF3DE; border-color: #C0DD97; } .p1 .pnum, .p1 .pval { color: #3B6D11; }
+  .p2 { background: #E6F1FB; border-color: #B5D4F4; } .p2 .pnum, .p2 .pval { color: #185FA5; }
+  .p3 { background: #FBEAF0; border-color: #F4C0D1; } .p3 .pnum, .p3 .pval { color: #993556; }
+
+  .esquema-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .esquema-row label { margin: 0; white-space: nowrap; min-width: 80px; }
+  .esquema-row input { flex: 1; }
+  .esquema-row span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .divider { border: none; border-top: 1px solid var(--borde); margin: .75rem 0; }
+
+  .presentacion-badge { display: inline-block; background: var(--rosa-light); color: var(--rosa-dark); font-size: 11px; padding: 3px 10px; border-radius: 99px; margin: 2px; font-weight: 500; }
+  .rosa-alerta { background: #FBEAF0; border-radius: var(--r); padding: 8px 10px; font-size: 12px; color: #993556; margin-top: 8px; display: none; }
+  .rosa-alerta.show { display: block; }
+
+  @media (max-width: 400px) {
+    .g3 { grid-template-columns: 1fr 1fr; }
+    .pago-grid { grid-template-columns: 1fr; }
+    .pgrid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-circle">AL</div>
+  <div class="header-text">
+    <h1>Amoru Loops</h1>
+    <p>Calculadora de precios — by Jandy</p>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="sw('nueva')">Nueva pieza</div>
+  <div class="tab" onclick="sw('cotiza')">Cotización</div>
+  <div class="tab" onclick="sw('flores')">Flores y ramos</div>
+</div>
+
+<!-- ===== PESTAÑA 1: NUEVA PIEZA ===== -->
+<div class="pane active" id="pane-nueva">
+  <div class="card"><div class="slabel">Materiales</div><div id="mats-nueva"></div><span class="add-mat" onclick="addMat('nueva')">+ Agregar otro material</span></div>
+  <div class="card">
+    <div class="slabel">Forma y producto</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label>Forma de la pieza</label><select id="n-forma"><option value="0.7">Mini / muy pequeña</option><option value="1.0" selected>Esférica / redonda</option><option value="1.3">Cuerpo completo</option><option value="1.6">Con accesorios (ropa…)</option><option value="2.0">Personaje muy detallado</option></select></div>
+      <div><label>Tipo de producto</label><select id="n-tipo"><option value="0.85">Llavero pequeño</option><option value="1.0" selected>Llavero grande / amigurumi</option><option value="1.3">Personaje / anime</option><option value="1.4">Peluche mediano</option><option value="1.6">Peluche grande</option><option value="1.1">Personalizado / otro</option></select></div>
+    </div>
+    <div class="g2">
+      <div><label>Tamaño terminado (cm)</label><input type="number" id="n-tam" value="7" min="2" max="40" step="0.5"></div>
+      <div><label>Argolla de llavero</label><select id="n-argolla"><option value="1">Sí</option><option value="0">No</option></select></div>
+    </div>
+  </div>
+  <div class="card"><div class="slabel">Accesorios</div><div class="g3"><div><label>Ojos (pares)</label><input type="number" id="n-ojos" value="1" min="0" max="8"></div><div><label>Relleno aprox. (g)</label><input type="number" id="n-relleno" value="5" min="0" max="150"></div><div><label>Fieltro/UHU/extras ($)</label><input type="number" id="n-extra" value="2" min="0" max="100"></div></div></div>
+  <div class="card"><div class="slabel">Tiempo real de tejido</div><div class="g2"><div><label>Horas reales que tardaste</label><input type="number" id="n-hrs" value="0.5" min="0.1" max="40" step="0.25"></div><div><label>Tarifa/hora ($MXN) <span class="hint" id="n-hint">sugerida $60</span></label><input type="number" id="n-tarifa" value="60" min="30" max="300"></div></div></div>
+  <button class="btn" onclick="calcNueva()">Calcular precio</button>
+  <div class="result card" id="res-nueva">
+    <div class="slabel">Precios recomendados</div>
+    <div class="pgrid"><div class="pc pm"><div class="lbl">Mínimo</div><div class="val" id="n-pm">—</div></div><div class="pc pe"><div class="lbl">Estudiante</div><div class="val" id="n-pe">—</div></div><div class="pc pp"><div class="lbl">Estándar</div><div class="val" id="n-pp">—</div></div><div class="pc pu"><div class="lbl">Premium</div><div class="val" id="n-pu">—</div></div></div>
+    <div class="desg" id="n-desg"></div>
+  </div>
+</div>
+
+<!-- ===== PESTAÑA 2: COTIZACIÓN ===== -->
+<div class="pane" id="pane-cotiza">
+  <div class="card">
+    <div class="slabel">Descripción del pedido</div>
+    <div style="margin-bottom:10px"><label>¿Qué le pidieron? (opcional)</label><input type="text" id="c-desc" placeholder="Ej: Conejo blanco 20cm con overol azul"></div>
+    <div class="g2">
+      <div><label>Tipo de producto</label><select id="c-tipo"><option value="0.85">Llavero pequeño</option><option value="1.0">Llavero grande / amigurumi</option><option value="1.3">Personaje / anime</option><option value="1.4">Peluche mediano</option><option value="1.6">Peluche grande</option><option value="1.1">Personalizado / otro</option></select></div>
+      <div><label>Complejidad</label><select id="c-comp"><option value="1.0">Simple</option><option value="1.2">Media</option><option value="1.5">Alta (ropa, accesorios)</option><option value="1.9">Muy alta (personaje completo)</option></select></div>
+    </div>
+  </div>
+  <div class="card"><div class="slabel">Materiales estimados</div><div id="mats-cotiza"></div><span class="add-mat" onclick="addMat('cotiza')">+ Agregar otro material</span></div>
+  <div class="card">
+    <div class="slabel">Tamaño y accesorios</div>
+    <div class="g2" style="margin-bottom:10px"><div><label>Tamaño aprox. (cm)</label><input type="number" id="c-tam" value="8" min="2" max="40" step="0.5"></div><div><label>Argolla de llavero</label><select id="c-argolla"><option value="1">Sí</option><option value="0" selected>No</option></select></div></div>
+    <div class="g3"><div><label>Ojos (pares)</label><input type="number" id="c-ojos" value="1" min="0" max="8"></div><div><label>Relleno aprox. (g)</label><input type="number" id="c-relleno" value="10" min="0" max="150"></div><div><label>Fieltro/UHU/extras ($)</label><input type="number" id="c-extra" value="2" min="0" max="100"></div></div>
+  </div>
+  <div class="card">
+    <div class="slabel">Tiempo y entrega</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label>Horas reales estimadas</label><input type="number" id="c-hrs-real" value="3" min="0.5" max="60" step="0.5" oninput="checkPrecio()"></div>
+      <div><label>Tarifa/hora ($MXN) <span class="hint" id="c-hint">sugerida $60</span></label><input type="number" id="c-tarifa" value="60" min="30" max="300" oninput="checkPrecio()"></div>
+    </div>
+    <div class="g2">
+      <div><label>Plazo de entrega</label><select id="c-plazo" onchange="checkPrecio()"><option value="urgente">Urgente (1–3 días) +40%</option><option value="rapido" selected>1 semana — normal</option><option value="normal">1–2 semanas — normal</option><option value="complejo">2–3 semanas −5%</option><option value="premium">+1 mes −10%</option></select></div>
+      <div><label>Precio que pensabas cobrar ($) <span class="hint">para validar</span></label><input type="number" id="c-precio-pensado" placeholder="Opcional" oninput="checkPrecio()"></div>
+    </div>
+    <div class="alerta" id="alerta-precio"></div>
+    <div class="info-box" id="plazo-info"></div>
+  </div>
+  <div class="card">
+    <div class="slabel">Esquema de pagos</div>
+    <div class="esquema-row"><label>Anticipo</label><input type="number" id="pct1" value="50" min="0" max="100" step="5" oninput="syncPcts()"><span>% — cubrir materiales al apartar</span></div>
+    <div class="esquema-row"><label>2do pago</label><input type="number" id="pct2" value="25" min="0" max="100" step="5" oninput="syncPcts()"><span>% — a la mitad del proceso</span></div>
+    <div class="esquema-row"><label>Pago final</label><input type="number" id="pct3" value="25" min="0" max="100" step="5" oninput="syncPcts()"><span>% — al entregar</span></div>
+    <div class="info-box" id="pcts-aviso">Los porcentajes suman 100% ✓</div>
+  </div>
+  <button class="btn" onclick="calcCotiza()">Generar cotización</button>
+  <div class="result card" id="res-cotiza">
+    <div class="slabel">Cotización para cliente</div>
+    <div class="pgrid"><div class="pc pm"><div class="lbl">Precio mínimo</div><div class="val" id="c-pm">—</div></div><div class="pc pe"><div class="lbl">Precio sugerido</div><div class="val" id="c-pe">—</div></div><div class="pc pp"><div class="lbl">Con recargo plazo</div><div class="val" id="c-pp">—</div></div><div class="pc pu"><div class="lbl">Premium</div><div class="val" id="c-pu">—</div></div></div>
+    <div class="desg" id="c-desg"></div>
+    <hr class="divider">
+    <div class="slabel" style="margin-top:.5rem">Parcialidades de pago</div>
+    <div class="pago-grid">
+      <div class="pago-card p1"><div class="pnum" id="pg1-label">Anticipo 50%</div><div class="pmom">Al apartar</div><div class="pval" id="pg1-val">—</div></div>
+      <div class="pago-card p2"><div class="pnum" id="pg2-label">2do pago 25%</div><div class="pmom">A la mitad</div><div class="pval" id="pg2-val">—</div></div>
+      <div class="pago-card p3"><div class="pnum" id="pg3-label">Final 25%</div><div class="pmom">Al entregar</div><div class="pval" id="pg3-val">—</div></div>
+    </div>
+    <div id="c-plazo-msg" style="margin-top:8px;font-size:12px;color:#993556;font-weight:500"></div>
+  </div>
+</div>
+
+<!-- ===== PESTAÑA 3: FLORES Y RAMOS ===== -->
+<div class="pane" id="pane-flores">
+  <div class="card">
+    <div class="slabel">Tipo de flor</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label>Complejidad de la flor</label><select id="f-comp" onchange="actualizarTiempoFlor()"><option value="0.5,60">Muy simple (margarita, corazón) ~30 min</option><option value="0.6,70" selected>Simple (tulipán, clavel) ~35–40 min</option><option value="0.75,80">Media (rosa, girasol) ~45 min</option><option value="1.0,90">Compleja (lirio, flor animalito) ~60 min</option><option value="1.4,100">Muy compleja (lirio detallado) ~80 min</option></select></div>
+      <div><label>Material principal</label><select id="f-mat" onchange="syncTarifaFlor()"><option value="algodon">Algodón Abuelita</option><option value="acrilico">Acrílico Charly Jr</option><option value="mixto">Mezcla algodón + acrílico</option></select></div>
+    </div>
+    <div class="g2">
+      <div><label>Horas reales por flor</label><input type="number" id="f-hrs" value="0.6" min="0.1" max="4" step="0.1"></div>
+      <div><label>Tarifa/hora ($MXN) <span class="hint" id="f-hint">$100/hr</span></label><input type="number" id="f-tarifa" value="100" min="30" max="300"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="slabel">Materiales por flor</div>
+    <div class="g3">
+      <div><label>Hilo estimado (g)</label><input type="number" id="f-gramos" value="8" min="1" max="60" step="0.5"></div>
+      <div><label>Alambre / palito ($)</label><input type="number" id="f-alambre" value="3" min="0" max="30" step="0.5"></div>
+      <div><label>Extras por flor ($)</label><input type="number" id="f-extra" value="1" min="0" max="20"></div>
+    </div>
+    <div class="info-box">Estimados provisionales: alambre cal.18 ~$1.5–2/pieza · cal.22/26 ~$0.5–1 · palito brocheta ~$0.60. Actualiza cuando cotices en CDMX.</div>
+  </div>
+  <div class="card">
+    <div class="slabel">Presentación del ramo</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label>Número de flores</label><select id="f-num" onchange="actualizarPresentacion()"><option value="1">1 flor individual</option><option value="3">Ramo pequeño (3 flores)</option><option value="5" selected>Ramo pequeño (5 flores)</option><option value="7">Ramo mediano (7 flores)</option><option value="10">Ramo mediano (10 flores)</option><option value="15">Ramo grande (15 flores)</option><option value="20">Ramo grande (20 flores)</option></select></div>
+      <div><label>¿Incluye amigurumi?</label><select id="f-amigurumi"><option value="0">No</option><option value="150">Sí — llavero pequeño (~$150)</option><option value="300">Sí — amigurumi mediano (~$300)</option><option value="500">Sí — amigurumi grande (~$500)</option></select></div>
+    </div>
+    <div class="info-box" id="presentacion-aviso"></div>
+  </div>
+  <div class="card">
+    <div class="slabel">Presentación y empaque</div>
+    <div class="verde-box" id="papel-aviso">Para ramos de 3+ flores — papel y listón incluido en el precio.</div>
+    <div class="g3">
+      <div><label>Hojas de papel usadas</label><input type="number" id="f-papel-hojas" value="2" min="0" max="10"></div>
+      <div><label>Costo por hoja ($)</label><input type="number" id="f-papel-costo" value="1.25" min="0" max="10" step="0.25"></div>
+      <div><label>Listón por ramo ($)</label><input type="number" id="f-liston" value="3" min="0" max="20" step="0.5"></div>
+    </div>
+    <div class="info-box">Papel: $25 ÷ 20 hojas = $1.25/hoja · Listón: estimado ~$3 por ramo (actualizar al cotizar).</div>
+  </div>
+  <button class="btn" onclick="calcFlores()">Calcular precio del ramo</button>
+  <div class="result card" id="res-flores">
+    <div class="slabel">Precios recomendados</div>
+    <div id="presentacion-badges" style="margin-bottom:8px"></div>
+    <div class="pgrid"><div class="pc pm"><div class="lbl">Mínimo</div><div class="val" id="f-pm">—</div></div><div class="pc pe"><div class="lbl">Estudiante</div><div class="val" id="f-pe">—</div></div><div class="pc pp"><div class="lbl">Estándar</div><div class="val" id="f-pp">—</div></div><div class="pc pu"><div class="lbl">Premium</div><div class="val" id="f-pu">—</div></div></div>
+    <div class="desg" id="f-desg"></div>
+    <hr class="divider">
+    <div class="slabel">Precio por flor individual</div>
+    <div class="g2" style="margin-top:8px">
+      <div class="pc pm"><div class="lbl">Flor suelta mínimo</div><div class="val" id="f-flor-min">—</div></div>
+      <div class="pc pe"><div class="lbl">Flor suelta sugerido</div><div class="val" id="f-flor-sug">—</div></div>
+    </div>
+    <div class="rosa-alerta" id="f-nuvole-comp"></div>
+  </div>
+</div>
+
+<script>
+const MAT={
+  chenille:{l:'Chenille Velluto',   pxg:0.70,tarifa:60, d:0.26},
+  komfy:   {l:'Chenille Komfy Mini',pxg:0.48,tarifa:60, d:0.18},
+  algodon: {l:'Algodón Abuelita',   pxg:0.56,tarifa:100,d:0.18},
+  acrilico:{l:'Acrílico Charly Jr', pxg:0.40,tarifa:80, d:0.15},
+  mixto:   {l:'Mixto / varios',     pxg:0.58,tarifa:120,d:0.22},
+};
+const PLAZO={
+  urgente:{txt:'Urgente 1–3 días — recargo del 40%',mult:1.40},
+  rapido: {txt:'1 semana — precio normal',mult:1.00},
+  normal: {txt:'1–2 semanas — precio normal',mult:1.00},
+  complejo:{txt:'2–3 semanas — pequeño descuento del 5%',mult:0.95},
+  premium:{txt:'+1 mes — descuento del 10%',mult:0.90},
+};
+const FMAT={
+  algodon:{pxg:0.56,tarifa:100,l:'Algodón'},
+  acrilico:{pxg:0.40,tarifa:80,l:'Acrílico'},
+  mixto:{pxg:0.48,tarifa:90,l:'Mezcla'},
+};
+const C_OJO=0.42,C_ARG=1.48,C_REL=0.18;
+let counts={nueva:1,cotiza:1};
+const matOpts=Object.entries(MAT).map(([k,v])=>`<option value="${k}">${v.l}</option>`).join('');
+
+function matRow(pane,idx,first){
+  const ps=first?'display:none':'';
+  return `<div class="mat-row" id="mr-${pane}-${idx}">
+    <select id="ms-${pane}-${idx}" onchange="syncTarifa('${pane}')">${matOpts}</select>
+    <div style="${ps}"><input type="number" id="mp-${pane}-${idx}" value="50" min="1" max="100" step="5" title="% de este material"><div class="pct-label">% uso</div></div>
+    <div class="rm" onclick="removeMat('${pane}',${idx})">×</div>
+  </div>`;
+}
+function initMats(){['nueva','cotiza'].forEach(p=>{document.getElementById('mats-'+p).innerHTML=matRow(p,0,true);});}
+function addMat(pane){const idx=counts[pane]++;const w=document.createElement('div');w.innerHTML=matRow(pane,idx,false);document.getElementById('mats-'+pane).appendChild(w.firstChild);}
+function removeMat(pane,idx){const r=document.getElementById('mr-'+pane+'-'+idx);if(r)r.remove();}
+function getMats(pane){
+  const rows=document.getElementById('mats-'+pane).querySelectorAll('.mat-row');
+  return Array.from(rows).map(r=>{
+    const s=r.querySelector('select');
+    const p=r.querySelector('input[type=number]');
+    const hidden=p&&p.parentElement&&p.parentElement.style.display==='none';
+    return {key:s?s.value:'chenille',pct:hidden?100:parseFloat(p&&p.value)||50};
+  });
+}
+function syncTarifa(pane){
+  const mats=getMats(pane);if(!mats.length)return;
+  const maxT=Math.max(...mats.map(m=>MAT[m.key].tarifa));
+  if(pane==='nueva'){document.getElementById('n-tarifa').value=maxT;document.getElementById('n-hint').textContent='sugerida $'+maxT+'/hr';}
+  else{document.getElementById('c-tarifa').value=maxT;document.getElementById('c-hint').textContent='sugerida $'+maxT+'/hr';}
+}
+function syncTarifaFlor(){const m=document.getElementById('f-mat').value;const t=FMAT[m].tarifa;document.getElementById('f-tarifa').value=t;document.getElementById('f-hint').textContent='$'+t+'/hr';}
+function actualizarTiempoFlor(){const v=document.getElementById('f-comp').value.split(',');document.getElementById('f-hrs').value=v[0];document.getElementById('f-tarifa').value=v[1];}
+function actualizarPresentacion(){
+  const n=parseInt(document.getElementById('f-num').value)||1;
+  const av=document.getElementById('presentacion-aviso');
+  if(n===1)av.textContent='Flor individual — sin empaque incluido.';
+  else if(n<=5)av.textContent='Ramo pequeño ('+n+' flores) — papel y listón incluidos en el precio.';
+  else if(n<=10)av.textContent='Ramo mediano ('+n+' flores) — papel y listón incluidos.';
+  else av.textContent='Ramo grande ('+n+' flores) — papel, listón y empaque completo incluidos.';
+}
+function sw(t){
+  ['nueva','cotiza','flores'].forEach((p,i)=>{
+    document.querySelectorAll('.tab')[i].classList.toggle('active',p===t);
+    document.getElementById('pane-'+p).classList.toggle('active',p===t);
+  });
+}
+function fmt(n){return '$'+Math.round(n);}
+function gramos(tam,d,forma){return tam*tam*d*parseFloat(forma)*0.18;}
+function syncPcts(){
+  const p1=parseFloat(document.getElementById('pct1').value)||0;
+  const p2=parseFloat(document.getElementById('pct2').value)||0;
+  const p3=parseFloat(document.getElementById('pct3').value)||0;
+  const total=p1+p2+p3;
+  const av=document.getElementById('pcts-aviso');
+  av.textContent=Math.abs(total-100)<0.1?'Los porcentajes suman 100% ✓':'Los porcentajes suman '+total+'% — deben sumar 100%';
+  av.style.color=Math.abs(total-100)<0.1?'#3B6D11':'#993556';
+}
+function checkPrecio(){
+  const hrs=parseFloat(document.getElementById('c-hrs-real').value)||0;
+  const tarifa=parseFloat(document.getElementById('c-tarifa').value)||60;
+  const pensado=parseFloat(document.getElementById('c-precio-pensado').value)||0;
+  const moSolo=hrs*tarifa;
+  const al=document.getElementById('alerta-precio');
+  if(pensado>0&&pensado<moSolo){al.textContent='Atención: '+fmt(pensado)+' no cubre la mano de obra sola ('+fmt(moSolo)+'). Estarías perdiendo dinero.';al.classList.add('show');}
+  else al.classList.remove('show');
+  const p=document.getElementById('c-plazo').value;
+  document.getElementById('plazo-info').textContent=PLAZO[p]?PLAZO[p].txt:'';
+}
+function calcNueva(){
+  const mats=getMats('nueva');
+  const tam=parseFloat(document.getElementById('n-tam').value)||7;
+  const forma=document.getElementById('n-forma').value;
+  const tipoMult=parseFloat(document.getElementById('n-tipo').value)||1;
+  const argolla=parseInt(document.getElementById('n-argolla').value)||0;
+  const ojos=parseInt(document.getElementById('n-ojos').value)||0;
+  const relleno=parseFloat(document.getElementById('n-relleno').value)||0;
+  const extra=parseFloat(document.getElementById('n-extra').value)||2;
+  const hrs=parseFloat(document.getElementById('n-hrs').value)||0.5;
+  const tarifa=parseFloat(document.getElementById('n-tarifa').value)||60;
+  let c_hilo=0,det=[];
+  const totalPct=mats.reduce((a,m)=>a+m.pct,0)||100;
+  mats.forEach(m=>{const cfg=MAT[m.key];const ratio=m.pct/totalPct;const g=gramos(tam,cfg.d,forma)*ratio;const c=g*cfg.pxg;c_hilo+=c;det.push(cfg.l+' ~'+g.toFixed(1)+'g → '+fmt(c));});
+  const c_acc=ojos*C_OJO+argolla*C_ARG+relleno*C_REL+extra;
+  const c_mo=hrs*tarifa;
+  const base=c_hilo+c_acc+c_mo;
+  const c_gi=base*0.15;
+  const costo=(base+c_gi)*tipoMult;
+  document.getElementById('n-pm').textContent=fmt(costo*1.30);
+  document.getElementById('n-pe').textContent=fmt(costo*1.65);
+  document.getElementById('n-pp').textContent=fmt(costo*2.10);
+  document.getElementById('n-pu').textContent=fmt(costo*2.80);
+  document.getElementById('n-desg').innerHTML=det.join(' | ')+'<br>Accesorios: <b>'+fmt(c_acc)+'</b> | MO ('+hrs+'h × $'+tarifa+'): <b>'+fmt(c_mo)+'</b> | GI 15%: <b>'+fmt(c_gi)+'</b><br><b>Costo real: '+fmt(costo)+' MXN</b>';
+  document.getElementById('res-nueva').classList.add('show');
+}
+function calcCotiza(){
+  const mats=getMats('cotiza');
+  const tam=parseFloat(document.getElementById('c-tam').value)||8;
+  const tipoMult=parseFloat(document.getElementById('c-tipo').value)||1;
+  const comp=parseFloat(document.getElementById('c-comp').value)||1;
+  const argolla=parseInt(document.getElementById('c-argolla').value)||0;
+  const ojos=parseInt(document.getElementById('c-ojos').value)||0;
+  const relleno=parseFloat(document.getElementById('c-relleno').value)||0;
+  const extra=parseFloat(document.getElementById('c-extra').value)||2;
+  const hrs=parseFloat(document.getElementById('c-hrs-real').value)||3;
+  const tarifa=parseFloat(document.getElementById('c-tarifa').value)||60;
+  const plazoKey=document.getElementById('c-plazo').value;
+  const plazoMult=PLAZO[plazoKey].mult;
+  let c_hilo=0,det=[];
+  const totalPct=mats.reduce((a,m)=>a+m.pct,0)||100;
+  mats.forEach(m=>{const cfg=MAT[m.key];const ratio=m.pct/totalPct;const g=gramos(tam,cfg.d,comp)*ratio;const c=g*cfg.pxg;c_hilo+=c;det.push(cfg.l+' ~'+g.toFixed(1)+'g → '+fmt(c));});
+  const c_acc=ojos*C_OJO+argolla*C_ARG+relleno*C_REL+extra;
+  const c_mo=hrs*tarifa;
+  const base=c_hilo+c_acc+c_mo;
+  const c_gi=base*0.15;
+  const costo=(base+c_gi)*tipoMult*comp;
+  const precioSugerido=costo*1.55*plazoMult;
+  document.getElementById('c-pm').textContent=fmt(costo*1.20);
+  document.getElementById('c-pe').textContent=fmt(precioSugerido);
+  document.getElementById('c-pp').textContent=fmt(costo*1.90*plazoMult);
+  document.getElementById('c-pu').textContent=fmt(costo*2.60*plazoMult);
+  document.getElementById('c-desg').innerHTML=det.join(' | ')+'<br>Accesorios: <b>'+fmt(c_acc)+'</b> | MO ('+hrs+'h × $'+tarifa+'): <b>'+fmt(c_mo)+'</b> | GI 15%: <b>'+fmt(c_gi)+'</b><br><b>Costo estimado: '+fmt(costo)+' MXN</b>';
+  const p1=parseFloat(document.getElementById('pct1').value)||50;
+  const p2=parseFloat(document.getElementById('pct2').value)||25;
+  const p3=parseFloat(document.getElementById('pct3').value)||25;
+  document.getElementById('pg1-label').textContent='Anticipo '+p1+'%';
+  document.getElementById('pg2-label').textContent='2do pago '+p2+'%';
+  document.getElementById('pg3-label').textContent='Final '+p3+'%';
+  document.getElementById('pg1-val').textContent=fmt(precioSugerido*p1/100);
+  document.getElementById('pg2-val').textContent=fmt(precioSugerido*p2/100);
+  document.getElementById('pg3-val').textContent=fmt(precioSugerido*p3/100);
+  document.getElementById('c-plazo-msg').textContent=PLAZO[plazoKey].txt;
+  document.getElementById('res-cotiza').classList.add('show');
+}
+function calcFlores(){
+  const matKey=document.getElementById('f-mat').value;
+  const fmatCfg=FMAT[matKey];
+  const grms=parseFloat(document.getElementById('f-gramos').value)||8;
+  const alambre=parseFloat(document.getElementById('f-alambre').value)||3;
+  const extraF=parseFloat(document.getElementById('f-extra').value)||1;
+  const hrs=parseFloat(document.getElementById('f-hrs').value)||0.6;
+  const tarifa=parseFloat(document.getElementById('f-tarifa').value)||100;
+  const numFlores=parseInt(document.getElementById('f-num').value)||1;
+  const amiVal=parseFloat(document.getElementById('f-amigurumi').value)||0;
+  const c_hilo_flor=grms*fmatCfg.pxg;
+  const c_mo_flor=hrs*tarifa;
+  const c_mat_flor=c_hilo_flor+alambre+extraF;
+  const base_flor=c_mat_flor+c_mo_flor;
+  const gi_flor=base_flor*0.15;
+  const costo_flor=base_flor+gi_flor;
+  const c_mat_total=c_mat_flor*numFlores;
+  const c_mo_total=c_mo_flor*numFlores;
+  const gi_total=(c_mat_total+c_mo_total)*0.15;
+  let c_empaque=0;
+  if(numFlores>=3){
+    const hojas=parseFloat(document.getElementById('f-papel-hojas').value)||2;
+    const cxhoja=parseFloat(document.getElementById('f-papel-costo').value)||1.25;
+    const liston=parseFloat(document.getElementById('f-liston').value)||3;
+    c_empaque=hojas*cxhoja+liston;
+  }
+  const costo_total=c_mat_total+c_mo_total+gi_total+c_empaque+amiVal;
+  document.getElementById('f-pm').textContent=fmt(costo_total*1.25);
+  document.getElementById('f-pe').textContent=fmt(costo_total*1.60);
+  document.getElementById('f-pp').textContent=fmt(costo_total*2.00);
+  document.getElementById('f-pu').textContent=fmt(costo_total*2.60);
+  document.getElementById('f-flor-min').textContent=fmt(costo_flor*1.25);
+  document.getElementById('f-flor-sug').textContent=fmt(costo_flor*1.65);
+  const tipoRamo=numFlores===1?'Flor individual':numFlores<=5?'Ramo pequeño ('+numFlores+' flores)':numFlores<=10?'Ramo mediano ('+numFlores+' flores)':'Ramo grande ('+numFlores+' flores)';
+  document.getElementById('presentacion-badges').innerHTML='<span class="presentacion-badge">'+tipoRamo+'</span>'+(amiVal>0?'<span class="presentacion-badge">+ Amigurumi</span>':'')+(numFlores>=3?'<span class="presentacion-badge">+ Papel y listón</span>':'');
+  document.getElementById('f-desg').innerHTML=fmatCfg.l+' ~'+grms+'g/flor → '+fmt(c_hilo_flor)+' | Alambre/tallo: '+fmt(alambre)+' | Extras: '+fmt(extraF)+'<br>MO/flor ('+hrs+'h × $'+tarifa+'): <b>'+fmt(c_mo_flor)+'</b> · Costo/flor: <b>'+fmt(costo_flor)+'</b><br>'+(numFlores>1?'Total '+numFlores+' flores + GI: <b>'+fmt(c_mat_total+c_mo_total+gi_total)+'</b>':'')+(c_empaque>0?' | Empaque: <b>'+fmt(c_empaque)+'</b>':'')+(amiVal>0?' | Amigurumi: <b>'+fmt(amiVal)+'</b>':'')+'<br><b>Costo total estimado: '+fmt(costo_total)+' MXN</b>';
+  const nuvoleRef={1:40,3:60,5:75,7:100,10:100};
+  const refKey=Object.keys(nuvoleRef).reduce((a,b)=>Math.abs(b-numFlores)<Math.abs(a-numFlores)?b:a);
+  const nuvoleP=nuvoleRef[refKey];
+  const miMin=Math.round(costo_flor*1.25);
+  const nv=document.getElementById('f-nuvole-comp');
+  if(miMin>nuvoleP){nv.textContent='Referencia: Nuvole cobra ~$'+nuvoleP+' por flor similar. Tu mínimo es $'+miMin+' — no bajes de ahí, Nuvole probablemente no se paga bien su tiempo.';nv.classList.add('show');}
+  else nv.classList.remove('show');
+  document.getElementById('res-flores').classList.add('show');
+}
+initMats();
+checkPrecio();
+actualizarPresentacion();
+syncTarifaFlor();
+</script>
+</body>
+</html>
